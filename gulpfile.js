@@ -6,44 +6,45 @@ const imagemin = require('gulp-imagemin');
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 
-// Tarefa para comprimir imagens
+// Compilar Sass
+function compilaSass() {
+  return gulp.src('./source/styles/*.scss')
+    .pipe(sourcemaps.init())
+    .pipe(gulpSass({ outputStyle: 'compressed' }).on('error', gulpSass.logError))
+    .pipe(sourcemaps.write('./maps'))
+    .pipe(gulp.dest('./build/styles'));
+}
+
+// Comprimir JS
+function comprimeJavaScript() {
+  return gulp.src('./source/scripts/*.js', { allowEmpty: true })
+    .pipe(uglify())
+    .pipe(rename({ suffix: '.min' }))
+    .pipe(gulp.dest('./build/scripts'));
+}
+
+// Comprimir imagens
 function comprimeImagens() {
-  return gulp.src('./source/images/*')
+  return gulp.src('./source/images/*', { allowEmpty: true })
     .pipe(imagemin())
     .pipe(gulp.dest('./build/images'));
 }
 
-// Função para compilar o Sass
-function compilaSass() {
-  return gulp.src('./source/styles/main.scss')
-    .pipe(sourcemaps.init())
-    .pipe(gulpSass({ outputStyle: 'compressed' }).on('error', gulpSass.logError))
-    .pipe(sourcemaps.write('./maps'))
-    .pipe(gulp.dest('./build/styles'))
-    .on('end', () => console.log('Sass compilado e minificado com exito!'));
-}
-
-// Função para comprimir JavaScript
-function comprimeJavaScript() {
-  return gulp.src('./source/scripts/*.js')
-    .pipe(uglify())
-    .pipe(rename({ suffix: '.min' }))
-    .pipe(gulp.dest('./build/scripts'))
-    .on('end', () => console.log('JavaScript minificado com exito!'));
-}
-
-// Watcher para monitorar alterações
+// Watcher
 function observarArquivos() {
-  gulp.watch('./source/styles/*.scss', gulp.series(compilaSass));
-  gulp.watch('./source/scripts/*.js', gulp.series(comprimeJavaScript));
-  gulp.watch('./source/images/*', gulp.series(comprimeImagens));
+  gulp.watch('./source/styles/*.scss', compilaSass);
+  gulp.watch('./source/scripts/*.js', comprimeJavaScript);
+  gulp.watch('./source/images/*', comprimeImagens);
 }
 
-// Exportações de tarefas
-exports.sass = compilaSass;
-exports.imagens = comprimeImagens;
-exports.scripts = comprimeJavaScript;
-exports.watch = observarArquivos;
+// Tarefa padrão
+exports.default = gulp.series(
+  gulp.parallel(compilaSass, comprimeJavaScript, comprimeImagens),
+  observarArquivos
+);
 
-// Tarefa padrão (executa tudo uma vez)
-exports.default = gulp.series(compilaSass, comprimeJavaScript, comprimeImagens, observarArquivos);
+// Tarefas individuais
+exports.sass = compilaSass;
+exports.scripts = comprimeJavaScript;
+exports.imagens = comprimeImagens;
+exports.watch = observarArquivos;
